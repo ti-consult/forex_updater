@@ -1,0 +1,6 @@
+.env
+.config
+*.db
+*.log
+/config/
+/data/
