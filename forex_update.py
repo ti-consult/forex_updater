@@ -201,7 +201,7 @@ def insert_rates(rates: list) -> int:
             conn.execute('roolback')
             raise
 
-def test():
+def run():
     """temp for dev"""
 
     pairs = retrieve_pairs()
@@ -240,4 +240,4 @@ def test():
     logger.info(f"inserted {count_inserts} forex daily closes into rates table, from {open_date + timedelta(days=1)} to {close_date}")
 
 
-test()
+run()
