@@ -178,6 +178,35 @@ class ForexUpdater:
                 self.logger.warning(f"API request attempt {attempt + 1} failed, retrying in {self.config.rate_limit_delay}s: {e}")
                 time.sleep(self.config.rate_limit_delay)
 
+    def _ensure_weekday(self, date_to_check: date) -> date:
+        """return the next weekday, or the given date if it is a weekday"""
+        if not isinstance(date_to_check, date):
+            raise TypeError(f'not a date: {date_to_check}')
+        var = 0 if date_to_check.weekday() < 5 else 7 - date_to_check.weekday()
+        return date_to_check + timedelta(days=var)
+
+    def _get_last_upate(self) -> date:
+        """Retrieve last date db was updated."""
+        query = f"""
+            SELECT max(date)
+            FROM {self.config.rates_table} 
+        """
+
+        try:
+            with self._db_connection() as conn:
+                result = conn.execute(query).fetchone()
+        except Exception as e:
+            self.error_logger.error(f"Failed to retrieve last date: {e}")
+            raise
+
+        if not result:
+            raise DataError("No last date found")
+
+        self.logger.info(f"Retrieved {result[0]} as last updated")
+
+        year, month, day = map(int, str(result[0]).split('-'))
+
+        return  date(year, month, day)
     def fetch_rates(self, params: QueryParams, pairs: List[str]) -> List[Tuple[str, str, float]]:
         """Fetch forex rates from API with validation."""
         data = self._make_api_request(params, pairs)
@@ -254,16 +283,22 @@ class ForexUpdater:
 
     def update_daily_rates(self, days_back: int = 2) -> None:
         """Main method to update forex rates."""
-        start_date = date.today() - timedelta(days=days_back)
+        begin_date = self._get_last_upate()
+        print(f"begin date {begin_date}")
         end_date = date.today() - timedelta(days=1)
 
-        # start_date = date(2024, 12, 31)
-        # end_date = date(2025, 1, 31)
+        start_date = self._ensure_weekday(begin_date)
+        if (start_date.weekday()>= 4):
+            self.logger.info(f"last updated {start_date}: wait for Tuesday NZT before next update")
+            sys.exit(0)
 
         params = QueryParams(
             start_date=start_date.strftime('%Y-%m-%d'),
             end_date=end_date.strftime('%Y-%m-%d')
         )
+
+        print(params)
+        sys.exit(0)
 
         self.logger.info(f"Starting forex update for {params.start_date} to {params.end_date}")
 
