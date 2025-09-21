@@ -254,11 +254,11 @@ class ForexUpdater:
 
     def update_daily_rates(self, days_back: int = 2) -> None:
         """Main method to update forex rates."""
-        # start_date = date.today() - timedelta(days=days_back)
-        # end_date = date.today() - timedelta(days=1)
+        start_date = date.today() - timedelta(days=days_back)
+        end_date = date.today() - timedelta(days=1)
 
-        start_date = date(2024, 12, 16)
-        end_date = date(2024, 12, 18)
+        # start_date = date(2024, 12, 31)
+        # end_date = date(2025, 1, 31)
 
         params = QueryParams(
             start_date=start_date.strftime('%Y-%m-%d'),
