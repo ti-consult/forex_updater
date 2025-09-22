@@ -284,7 +284,6 @@ class ForexUpdater:
     def update_daily_rates(self, days_back: int = 2) -> None:
         """Main method to update forex rates."""
         begin_date = self._get_last_upate()
-        print(f"begin date {begin_date}")
         end_date = date.today() - timedelta(days=1)
 
         start_date = self._ensure_weekday(begin_date)
