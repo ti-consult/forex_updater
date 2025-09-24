@@ -178,11 +178,12 @@ class ForexUpdater:
                 self.logger.warning(f"API request attempt {attempt + 1} failed, retrying in {self.config.rate_limit_delay}s: {e}")
                 time.sleep(self.config.rate_limit_delay)
 
-    def _ensure_weekday(self, date_to_check: date) -> date:
+    def _calc_start_date(self, date_to_check: date) -> date:
         """return the next weekday, or the given date if it is a weekday"""
         if not isinstance(date_to_check, date):
             raise TypeError(f'not a date: {date_to_check}')
-        var = 0 if date_to_check.weekday() < 5 else 7 - date_to_check.weekday()
+        var = 0 if date_to_check.isoweekday() != 6  else 7 - date_to_check.isoweekday()
+
         return date_to_check + timedelta(days=var)
 
     def _get_last_upate(self) -> date:
@@ -207,6 +208,7 @@ class ForexUpdater:
         year, month, day = map(int, str(result[0]).split('-'))
 
         return  date(year, month, day)
+
     def fetch_rates(self, params: QueryParams, pairs: List[str]) -> List[Tuple[str, str, float]]:
         """Fetch forex rates from API with validation."""
         data = self._make_api_request(params, pairs)
@@ -286,18 +288,18 @@ class ForexUpdater:
         begin_date = self._get_last_upate()
         end_date = date.today() - timedelta(days=1)
 
-        start_date = self._ensure_weekday(begin_date)
-        if (start_date.weekday()>= 4):
-            self.logger.info(f"last updated {start_date}: wait for Tuesday NZT before next update")
+        start_date = self._calc_start_date(begin_date)
+        if (start_date >= end_date):
+            self.logger.info(f"last updated {begin_date}: wait for next day before next update")
             sys.exit(0)
+
+        # start_date = date(2025, 9, 21)
+        # end_date = date(2025, 9,22)
 
         params = QueryParams(
             start_date=start_date.strftime('%Y-%m-%d'),
             end_date=end_date.strftime('%Y-%m-%d')
         )
-
-        print(params)
-        sys.exit(0)
 
         self.logger.info(f"Starting forex update for {params.start_date} to {params.end_date}")
 
